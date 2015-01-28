@@ -2,15 +2,6 @@
 
 use strict;
 use warnings;
-
-my $root_dir;
-BEGIN {
-    $root_dir = $0;
-    $root_dir =~ s/[^\/]*$//;
-    $root_dir = "./" unless $root_dir =~ /\//;
-    push @INC, $root_dir;
-}
-
 use feature qw(say);
 use autodie;
 use IPC::System::Simple qw(system);
@@ -18,6 +9,9 @@ use Carp::Always;
 use Carp qw( croak );
 use Getopt::Long;
 use Data::UUID;
+use FindBin qw($Bin);
+use lib "$Bin/../gt-download-upload-wrapper/lib/";
+
 use GNOS::Upload;
 
 my $milliseconds_in_an_hour = 3600000;
@@ -360,11 +354,9 @@ END
 </EXPERIMENT_SET>
 END
 
-    if ($exp_xml) {
-        open my $out, '>', "$output_dir/experiment.xml";
-        print $out $exp_xml;
-        close $out;
-    }
+    open $out, '>', "$output_dir/experiment.xml";
+    print $out $exp_xml;
+    close $out;
 
     my $run_xml = <<END;
   <RUN_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.run.xsd?view=co">
@@ -379,12 +371,11 @@ END
     $run_xml .= <<END;
   </RUN_SET>
 END
+ 
+    open $out, '>', "$output_dir/run.xml";
+    print $out $run_xml;
+    close $out;
 
-    if ($run_xml) {
-        open my $out, '>', "$output_dir/run.xml";
-        print $out $run_xml;
-        close $out;
-    }
     return ($output_dir);
 } # close sub
 
