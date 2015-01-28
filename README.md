@@ -49,42 +49,23 @@ gnos_upload_fastq.pl  --fastq <your_fastq.tar.gz>  --fastq-md5sum-file <your_fas
 
 ## Notes About GNOS Analysis XML
 
-The tool encodes various metadata in an analysis.xml for uploading to GNOS.  Here's some additional information about what is populated in some key fields that folks on the project have asked about.
-
-    <ANALYSIS center_name="UCSC" analysis_center="OICR" analysis_date="2014-12-04T20:11:46”>
-
-In this element, center_name is carried over from the input XML (no mechanism to override in workflow/VCF uploader).
-
-analysis_center defaults to OICR but can be overridden by a parameter to the workflow/VCF uploader.
-
-    <STUDY_REF refcenter="TCGA" refname="tcga_pancancer_vcf_test”/>
-
-refcenter is carried over from the input XML (no mechanism to override in workflow/VCF uploader).
-
-refname defaults to “icgc_pancancer_vcf” but can be overridden by a parameter to the workflow/VCF uploader.
-
-
 Here is an example of a metadata file.  The key=value pairs are largely derived from the uniformly aligned bam files from the same ICGC Project and Donor:
 
-ID:121002_UNC11-SN627_0254_AC0WP5ACXX_3_GTCCGC
-CN:UNC-LCCC
-PL:ILLUMINA
-PM:Illumina Genome Analyzer II
-LB:RNA-Seq:UNC-LCCC:Illumina TruSeq for 1e176d9d-dba9-4d41-946e-05b7f35eba64
-SM:1e176d9d-dba9-4d41-946e-05b7f35eba64
-PU:UNC-LCCC:2066824_1
-DT:2012-10-16T11:16:21.365
-dcc_project_code:CESC-US
-submitter_donor_id:0809ba8b-4ab6-4f43-934c-c1ccbc014a7e
-submitter_specimen_id:5f613800-55df-497f-a544-5b12cb9446ce
-submitter_sample_id:b3b3a27c-ee9a-42af-a6d1-9af5970a98b9
-dcc_specimen_type:Primary Tumour - solid tissue
-aliquot_id:1e176d9d-dba9-4d41-946e-05b7f35eba64
-md5sum:ffec1a6e359ee0dd55d72d7967b1ce06
+* ID:121002_UNC11-SN627_0254_AC0WP5ACXX_3_GTCCGC
+* CN:UNC-LCCC
+* PL:ILLUMINA
+* PM:Illumina Genome Analyzer II
+* LB:RNA-Seq:UNC-LCCC:Illumina TruSeq for 1e176d9d-dba9-4d41-946e-05b7f35eba64
+* SM:1e176d9d-dba9-4d41-946e-05b7f35eba64
+* PU:UNC-LCCC:2066824_1
+* DT:2012-10-16T11:16:21.365
+* dcc_project_code:CESC-US
+* submitter_donor_id:0809ba8b-4ab6-4f43-934c-c1ccbc014a7e
+* submitter_specimen_id:5f613800-55df-497f-a544-5b12cb9446ce
+* submitter_sample_id:b3b3a27c-ee9a-42af-a6d1-9af5970a98b9
+* dcc_specimen_type:Primary Tumour - solid tissue
+* aliquot_id:1e176d9d-dba9-4d41-946e-05b7f35eba64
+* md5sum:ffec1a6e359ee0dd55d72d7967b1ce06
 
 These values were extracted from this TCGA unaligned RNA-Seq fastq file from the PanCancer Analysis Project:
 https://cghub.ucsc.edu/cghub/metadata/analysisFull/29507bea-bf84-4b4e-902b-e7e42d70ca31
-
-
-
-
