@@ -244,6 +244,7 @@ sub generate_submission {
     my $icgc_sample_id = $m->{icgc_sample_id};
     my $accession = $m->{accession};
     my $library_type = $m->{library_type};
+    my $library_selection = $m->{library_selection};
 
     my $analysis_xml = <<ANALYSISXML;
 <ANALYSIS_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.analysis.xsd?view=co">
