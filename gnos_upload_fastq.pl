@@ -6,7 +6,7 @@ use feature qw(say);
 use autodie;
 use IPC::System::Simple qw(system);
 use Carp::Always;
-use Carp qw( croak );
+use Carp qw(croak);
 use Getopt::Long;
 use Data::UUID;
 use FindBin qw($Bin);
@@ -49,6 +49,7 @@ my $force_copy         = q{};
 my $test          = q{};
 my $skip_validate = q{};
 my $skip_upload   = q{};
+
 
 if ( scalar(@ARGV) < 12 || scalar(@ARGV) > 22 ) {
     die "USAGE: 'perl gnos_upload_fastq.pl
@@ -138,6 +139,34 @@ while ( <$FH> ) {
     $metad->{$key} = $value;
 }
 
+unless ( exists $metad->{includes_spike_ins} ) {
+    $metad->{includes_spike_ins} = 'no';
+}
+
+unless ( exists $metad->{spike_ins_fasta} ) {
+    $metad->{spike_ins_fasta} = 'N/A';
+}
+
+unless ( exists $metad->{spike_ins_concentration} ) {
+    $metad->{spike_ins_concentration} = 'N/A';
+}
+
+unless ( exists $metad->{icgc_donor_id} ) {
+    $metad->{icgc_donor_id} = 'NONE';
+}
+
+unless ( exists $metad->{icgc_specimen_id} ) {
+    $metad->{icgc_specimen_id} = 'NONE';
+}
+
+unless ( exists $metad->{icgc_sample_id} ) {
+    $metad->{icgc_sample_id} = 'NONE';
+}
+
+unless ( exists $metad->{accession} ) {
+    $metad->{accession} = 'NONE';
+}
+
 say 'GENERATING SUBMISSION';
 my $sub_path = generate_submission( $metad, );
 
@@ -210,6 +239,14 @@ sub generate_submission {
     my $run = $platform_unit;
     my $exp = $run . ':' . $library;
     my $md5_sum = $m->{md5sum};
+    my $includes_spike_ins = $m->{includes_spike_ins};
+    my $spike_ins_fasta = $m->{spike_ins_fasta};
+    my $spike_ins_concentration = $m->{spike_ins_concentration};
+    my $icgc_donor_id = $m->{icgc_donor_id};
+    my $icgc_specimen_id = $m->{icgc_specimen_id};
+    my $icgc_sample_id = $m->{icgc_sample_id};
+    my $accession = $m->{accession};
+    my $library_selection = $m->{library_selection};
 
     my $analysis_xml = <<ANALYSISXML;
 <ANALYSIS_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.analysis.xsd?view=co">
@@ -279,6 +316,30 @@ sub generate_submission {
         <TAG>use_cntl</TAG>
         <VALUE>N/A</VALUE>
       </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>includes_spike_ins</TAG>
+        <VALUE>$includes_spike_ins</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>spike_ins_fasta</TAG>
+        <VALUE>$spike_ins_fasta</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>spike_ins_concentraion</TAG>
+        <VALUE>$spike_ins_concentration</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>icgc_donor_id</TAG>
+        <VALUE>$icgc_donor_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>icgc_specimen_id</TAG>
+        <VALUE>$icgc_specimen_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>icgc_sample_id</TAG>
+        <VALUE>$icgc_sample_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
     </ANALYSIS_ATTRIBUTES>
   </ANALYSIS>
 </ANALYSIS_SET>
@@ -294,15 +355,15 @@ END
 
     $exp_xml .= <<END;
 <EXPERIMENT center_name="$center_name" alias="$exp">
-  <STUDY_REF refcenter="OICR" refname="CGTEST"/>
+  <STUDY_REF refcenter="OICR" refname="$study_name"/>
     <DESIGN>
       <DESIGN_DESCRIPTION>ICGC RNA-Seq Paired-End Experiment</DESIGN_DESCRIPTION>
       <SAMPLE_DESCRIPTOR refcenter="OICR" refname="$aliquot_id"/>
       <LIBRARY_DESCRIPTOR>
         <LIBRARY_NAME>"$library"</LIBRARY_NAME>
         <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
-        <LIBRARY_SOURCE>GENOMIC</LIBRARY_SOURCE>
-        <LIBRARY_SELECTION>RANDOM</LIBRARY_SELECTION>
+        <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
+        <LIBRARY_SELECTION>$library_selection</LIBRARY_SELECTION>
         <LIBRARY_LAYOUT>
           <PAIRED/>
         </LIBRARY_LAYOUT>
