@@ -14,8 +14,6 @@ use lib "$Bin/../gt-download-upload-wrapper/lib/";
 
 use GNOS::Upload;
 
-my $milliseconds_in_an_hour = 3600000;
-
 #########################################################################################################
 # DESCRIPTION                                                                                           #
 #########################################################################################################
@@ -23,7 +21,7 @@ my $milliseconds_in_an_hour = 3600000;
 # file, generates the new submission metadata files, and then performs the uploads to the               #
 # specified GNOS repository                                                                             #
 # See https://github.com/SeqWare/public-workflows/blob/develop/fastq-uploader/README.md                 #
-# Also see https://wiki.oicr.on.ca/display/PANCANCER/PCAWG+RNA-Seq+fastq+Sequence+Submission+SOP+-+v0.1 #
+# Also see https://wiki.oicr.on.ca/display/PANCANCER/PCAWG+RNA-Seq+fastq+Sequence+Submission+SOP+-+v0.9 #
 #########################################################################################################
 
 #############
@@ -42,7 +40,7 @@ my $md5_file = q{};
 my $output_dir    = "test_output_dir";
 my $key           = "gnostest.pem";
 my $upload_url    = q{};
-my $study_ref_name  = "PACWG 2.0";
+my $study_ref_name  = "icgc_pancancer";
 my $analysis_center = "OICR";
 my $metadata;
 my $force_copy         = q{};
@@ -139,6 +137,8 @@ while ( <$FH> ) {
     $metad->{$key} = $value;
 }
 
+$metad->{study} = $study_ref_name;
+
 unless ( exists $metad->{includes_spike_ins} ) {
     $metad->{includes_spike_ins} = 'no';
 }
@@ -161,10 +161,6 @@ unless ( exists $metad->{icgc_specimen_id} ) {
 
 unless ( exists $metad->{icgc_sample_id} ) {
     $metad->{icgc_sample_id} = 'NONE';
-}
-
-unless ( exists $metad->{accession} ) {
-    $metad->{accession} = 'NONE';
 }
 
 say 'GENERATING SUBMISSION';
@@ -222,6 +218,7 @@ sub generate_submission {
     my ( $m, ) = @_;
     my $datetime = $m->{DT};
     my $refcenter = "OICR";
+    my $study_name = $m->{study};
     my $dcc_project_code = $m->{dcc_project_code};
     my $dcc_specimen_type = $m->{dcc_specimen_type};
     my $submitter_sample_id = $m->{submitter_sample_id};
@@ -246,13 +243,13 @@ sub generate_submission {
     my $icgc_specimen_id = $m->{icgc_specimen_id};
     my $icgc_sample_id = $m->{icgc_sample_id};
     my $accession = $m->{accession};
-    my $library_selection = $m->{library_selection};
+    my $library_type = $m->{library_type};
 
     my $analysis_xml = <<ANALYSISXML;
 <ANALYSIS_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.analysis.xsd?view=co">
   <ANALYSIS center_name="$center_name" analysis_date="$datetime" >
     <TITLE>ICGC PanCancer FASTQ file tarball GNOS Upload</TITLE>
-    <STUDY_REF refcenter="OICR" refname="CGTEST"/>
+    <STUDY_REF refcenter="$refcenter" refname="$study_name"/>
     <DESCRIPTION>RNA-Seq fastq tarball upload for: $aliquot_id</DESCRIPTION>
     <ANALYSIS_TYPE>
       <REFERENCE_ALIGNMENT>
@@ -263,7 +260,7 @@ sub generate_submission {
           <RUN refcenter="$center_name" refname="$run" read_group_label="$read_group_label" data_block_name="$library"/>
         </RUN_LABELS>
         <SEQ_LABELS>
-          <SEQUENCE accession="NA" data_block_name="NA" seq_label="NA"/>
+          <SEQUENCE accession="$accession" data_block_name="NA" seq_label="NA"/>
         </SEQ_LABELS>
         <PROCESSING>
           <DIRECTIVES>
@@ -325,7 +322,7 @@ sub generate_submission {
         <VALUE>$spike_ins_fasta</VALUE>
       </ANALYSIS_ATTRIBUTE>
       <ANALYSIS_ATTRIBUTE>
-        <TAG>spike_ins_concentraion</TAG>
+        <TAG>spike_ins_concentration</TAG>
         <VALUE>$spike_ins_concentration</VALUE>
       </ANALYSIS_ATTRIBUTE>
       <ANALYSIS_ATTRIBUTE>
@@ -339,6 +336,10 @@ sub generate_submission {
       <ANALYSIS_ATTRIBUTE>
         <TAG>icgc_sample_id</TAG>
         <VALUE>$icgc_sample_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>library_type</TAG>
+        <VALUE>$library_type</VALUE>
       </ANALYSIS_ATTRIBUTE>
     </ANALYSIS_ATTRIBUTES>
   </ANALYSIS>
