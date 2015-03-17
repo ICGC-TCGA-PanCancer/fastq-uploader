@@ -274,7 +274,7 @@ sub generate_submission {
               <STEP_INDEX>NA</STEP_INDEX>
               <PREV_STEP_INDEX>NA</PREV_STEP_INDEX>
               <PROGRAM>gnos_upload_fastq.pl</PROGRAM>
-              <VERSION>0.001</VERSION>
+              <VERSION>1.02</VERSION>
               <NOTES></NOTES>
             </PIPE_SECTION>
           </PIPELINE>
