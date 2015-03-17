@@ -6,15 +6,13 @@ use feature qw(say);
 use autodie;
 use IPC::System::Simple qw(system);
 use Carp::Always;
-use Carp qw( croak );
+use Carp qw(croak);
 use Getopt::Long;
 use Data::UUID;
 use FindBin qw($Bin);
 use lib "$Bin/../gt-download-upload-wrapper/lib/";
 
 use GNOS::Upload;
-
-my $milliseconds_in_an_hour = 3600000;
 
 #########################################################################################################
 # DESCRIPTION                                                                                           #
@@ -23,7 +21,7 @@ my $milliseconds_in_an_hour = 3600000;
 # file, generates the new submission metadata files, and then performs the uploads to the               #
 # specified GNOS repository                                                                             #
 # See https://github.com/SeqWare/public-workflows/blob/develop/fastq-uploader/README.md                 #
-# Also see https://wiki.oicr.on.ca/display/PANCANCER/PCAWG+RNA-Seq+fastq+Sequence+Submission+SOP+-+v0.1 #
+# Also see https://wiki.oicr.on.ca/display/PANCANCER/PCAWG+RNA-Seq+fastq+Sequence+Submission+SOP+-+v0.9 #
 #########################################################################################################
 
 #############
@@ -42,13 +40,14 @@ my $md5_file = q{};
 my $output_dir    = "test_output_dir";
 my $key           = "gnostest.pem";
 my $upload_url    = q{};
-my $study_ref_name  = "PACWG 2.0";
+my $study_ref_name  = "icgc_pancancer";
 my $analysis_center = "OICR";
 my $metadata;
 my $force_copy         = q{};
 my $test          = q{};
 my $skip_validate = q{};
 my $skip_upload   = q{};
+
 
 if ( scalar(@ARGV) < 12 || scalar(@ARGV) > 22 ) {
     die "USAGE: 'perl gnos_upload_fastq.pl
@@ -138,6 +137,32 @@ while ( <$FH> ) {
     $metad->{$key} = $value;
 }
 
+$metad->{study} = $study_ref_name;
+
+unless ( exists $metad->{includes_spike_ins} ) {
+    $metad->{includes_spike_ins} = 'no';
+}
+
+unless ( exists $metad->{spike_ins_fasta} ) {
+    $metad->{spike_ins_fasta} = 'N/A';
+}
+
+unless ( exists $metad->{spike_ins_concentration} ) {
+    $metad->{spike_ins_concentration} = 'N/A';
+}
+
+unless ( exists $metad->{icgc_donor_id} ) {
+    $metad->{icgc_donor_id} = 'NONE';
+}
+
+unless ( exists $metad->{icgc_specimen_id} ) {
+    $metad->{icgc_specimen_id} = 'NONE';
+}
+
+unless ( exists $metad->{icgc_sample_id} ) {
+    $metad->{icgc_sample_id} = 'NONE';
+}
+
 say 'GENERATING SUBMISSION';
 my $sub_path = generate_submission( $metad, );
 
@@ -193,6 +218,7 @@ sub generate_submission {
     my ( $m, ) = @_;
     my $datetime = $m->{DT};
     my $refcenter = "OICR";
+    my $study_name = $m->{study};
     my $dcc_project_code = $m->{dcc_project_code};
     my $dcc_specimen_type = $m->{dcc_specimen_type};
     my $submitter_sample_id = $m->{submitter_sample_id};
@@ -210,12 +236,21 @@ sub generate_submission {
     my $run = $platform_unit;
     my $exp = $run . ':' . $library;
     my $md5_sum = $m->{md5sum};
+    my $includes_spike_ins = $m->{includes_spike_ins};
+    my $spike_ins_fasta = $m->{spike_ins_fasta};
+    my $spike_ins_concentration = $m->{spike_ins_concentration};
+    my $icgc_donor_id = $m->{icgc_donor_id};
+    my $icgc_specimen_id = $m->{icgc_specimen_id};
+    my $icgc_sample_id = $m->{icgc_sample_id};
+    my $accession = $m->{accession};
+    my $library_type = $m->{library_type};
+    my $library_selection = $m->{library_selection};
 
     my $analysis_xml = <<ANALYSISXML;
 <ANALYSIS_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.analysis.xsd?view=co">
   <ANALYSIS center_name="$center_name" analysis_date="$datetime" >
     <TITLE>ICGC PanCancer FASTQ file tarball GNOS Upload</TITLE>
-    <STUDY_REF refcenter="OICR" refname="CGTEST"/>
+    <STUDY_REF accession="$accession" refcenter="$refcenter" refname="$study_name"/>
     <DESCRIPTION>RNA-Seq fastq tarball upload for: $aliquot_id</DESCRIPTION>
     <ANALYSIS_TYPE>
       <REFERENCE_ALIGNMENT>
@@ -239,7 +274,7 @@ sub generate_submission {
               <STEP_INDEX>NA</STEP_INDEX>
               <PREV_STEP_INDEX>NA</PREV_STEP_INDEX>
               <PROGRAM>gnos_upload_fastq.pl</PROGRAM>
-              <VERSION>0.001</VERSION>
+              <VERSION>1.02</VERSION>
               <NOTES></NOTES>
             </PIPE_SECTION>
           </PIPELINE>
@@ -279,6 +314,34 @@ sub generate_submission {
         <TAG>use_cntl</TAG>
         <VALUE>N/A</VALUE>
       </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>includes_spike_ins</TAG>
+        <VALUE>$includes_spike_ins</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>spike_ins_fasta</TAG>
+        <VALUE>$spike_ins_fasta</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>spike_ins_concentration</TAG>
+        <VALUE>$spike_ins_concentration</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>icgc_donor_id</TAG>
+        <VALUE>$icgc_donor_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>icgc_specimen_id</TAG>
+        <VALUE>$icgc_specimen_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>icgc_sample_id</TAG>
+        <VALUE>$icgc_sample_id</VALUE>
+      </ANALYSIS_ATTRIBUTE>
+      <ANALYSIS_ATTRIBUTE>
+        <TAG>library_type</TAG>
+        <VALUE>$library_type</VALUE>
+      </ANALYSIS_ATTRIBUTE>
     </ANALYSIS_ATTRIBUTES>
   </ANALYSIS>
 </ANALYSIS_SET>
@@ -294,15 +357,15 @@ END
 
     $exp_xml .= <<END;
 <EXPERIMENT center_name="$center_name" alias="$exp">
-  <STUDY_REF refcenter="OICR" refname="CGTEST"/>
+  <STUDY_REF accession= "$accession" refcenter="OICR" refname="$study_name"/>
     <DESIGN>
       <DESIGN_DESCRIPTION>ICGC RNA-Seq Paired-End Experiment</DESIGN_DESCRIPTION>
       <SAMPLE_DESCRIPTOR refcenter="OICR" refname="$aliquot_id"/>
       <LIBRARY_DESCRIPTOR>
         <LIBRARY_NAME>"$library"</LIBRARY_NAME>
         <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
-        <LIBRARY_SOURCE>GENOMIC</LIBRARY_SOURCE>
-        <LIBRARY_SELECTION>RANDOM</LIBRARY_SELECTION>
+        <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
+        <LIBRARY_SELECTION>$library_selection</LIBRARY_SELECTION>
         <LIBRARY_LAYOUT>
           <PAIRED/>
         </LIBRARY_LAYOUT>
@@ -402,7 +465,7 @@ gnos_upload_fastq.pl - Generates metadata files and uploads metadata and fastq f
   
 =head1 VERSION
  
-This documentation refers to gnos_upload_fastq.pl version 0.0.1
+This documentation refers to gnos_upload_fastq.pl version 1.0.2
  
 =head1 USAGE
 
