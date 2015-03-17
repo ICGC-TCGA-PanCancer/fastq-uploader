@@ -250,7 +250,7 @@ sub generate_submission {
 <ANALYSIS_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.analysis.xsd?view=co">
   <ANALYSIS center_name="$center_name" analysis_date="$datetime" >
     <TITLE>ICGC PanCancer FASTQ file tarball GNOS Upload</TITLE>
-    <STUDY_REF refcenter="$refcenter" refname="$study_name"/>
+    <STUDY_REF accession="$accession" refcenter="$refcenter" refname="$study_name"/>
     <DESCRIPTION>RNA-Seq fastq tarball upload for: $aliquot_id</DESCRIPTION>
     <ANALYSIS_TYPE>
       <REFERENCE_ALIGNMENT>
@@ -261,7 +261,7 @@ sub generate_submission {
           <RUN refcenter="$center_name" refname="$run" read_group_label="$read_group_label" data_block_name="$library"/>
         </RUN_LABELS>
         <SEQ_LABELS>
-          <SEQUENCE accession="$accession" data_block_name="NA" seq_label="NA"/>
+          <SEQUENCE accession="NA" data_block_name="NA" seq_label="NA"/>
         </SEQ_LABELS>
         <PROCESSING>
           <DIRECTIVES>
@@ -357,7 +357,7 @@ END
 
     $exp_xml .= <<END;
 <EXPERIMENT center_name="$center_name" alias="$exp">
-  <STUDY_REF refcenter="OICR" refname="$study_name"/>
+  <STUDY_REF accession= "$accession" refcenter="OICR" refname="$study_name"/>
     <DESIGN>
       <DESIGN_DESCRIPTION>ICGC RNA-Seq Paired-End Experiment</DESIGN_DESCRIPTION>
       <SAMPLE_DESCRIPTOR refcenter="OICR" refname="$aliquot_id"/>
@@ -465,7 +465,7 @@ gnos_upload_fastq.pl - Generates metadata files and uploads metadata and fastq f
   
 =head1 VERSION
  
-This documentation refers to gnos_upload_fastq.pl version 0.0.1
+This documentation refers to gnos_upload_fastq.pl version 1.0.2
  
 =head1 USAGE
 

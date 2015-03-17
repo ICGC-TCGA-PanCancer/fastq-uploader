@@ -69,7 +69,7 @@ md5sum:ffec1a6e359ee0dd55d72d7967b1ce06
 icgc_donor_id:DO48977
 icgc_specimen_id:SP107575
 icgc_sample_id:SA517451
-library_selection:PolyA
+library_selection:cDNA
 library_type:fr-unstranded
 accession:EGAR00001002747
 
