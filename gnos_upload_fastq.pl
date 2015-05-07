@@ -65,7 +65,7 @@ if ( scalar(@ARGV) < 12 || scalar(@ARGV) > 22 ) {
        [--skip-validate]
        [--skip-upload]
        [--test]
-       gnos_upload_fastq.pl  --fastq <your_fastq.tar.gz>  --fastq-md5sum-file <your_fastq.tar.gz.md5 --outdir <your_outdir> --upload-url <https://gtrepo-ebi.annailabs.com> --key <full/path/to/your/gnos_key.pem> --metadata <your_metadata_file.txt>\n";
+       gnos_upload_fastq.pl  --fastq <your_fastq.tar.gz>  --fastq-md5sum-file <your_fastq.tar.gz.md5 --outdir <your_outdir> --upload-url <https://gtrepo-bsc.annailabs.com> --key <full/path/to/your/gnos_key.pem> --metadata <your_metadata_file.txt>\n";
 }
 
 GetOptions(
@@ -134,7 +134,13 @@ my $metad = {};
 while ( <$FH> ) {
     chomp;
     my ( $key, $value, ) = m/^([^:]+):(.+)$/;
-    $metad->{$key} = $value;
+    if ( $key =~ m/ID|LB|PU/ ) {
+        my @values = split(/%%/, $value);
+	$metad->{$key} = \@values;	
+    }
+    else {
+	$metad->{$key} = $value;
+    }
 }
 
 $metad->{study} = $study_ref_name;
@@ -226,15 +232,17 @@ sub generate_submission {
     my $submitter_donor_id = $m->{submitter_donor_id};
     my $sample_uuid = $m->{SM};
     my $aliquot_id = $m->{aliquot_id};
-    my $library = $m->{LB};
-    my $read_group_label = $m->{ID};
+    my @libraries = @{$m->{LB}};
+    my @read_group_labels = @{$m->{ID}};
     my $platform = $m->{PL};
     my $platform_model = $m->{PM};
-    my $platform_unit = $m->{PU};
-    my $participant_id = $m->{submitter_donor_id};
+    my @platform_units = @{$m->{PU}};
     my $center_name = $m->{CN};
-    my $run = $platform_unit;
-    my $exp = $run . ':' . $library;
+    my @runs = @platform_units;
+    my @expts = ();
+    foreach my $i (0..$#libraries) {
+	$expts[$i] = $runs[$i] . ':' . $libraries[$i];
+    }
     my $md5_sum = $m->{md5sum};
     my $includes_spike_ins = $m->{includes_spike_ins};
     my $spike_ins_fasta = $m->{spike_ins_fasta};
@@ -258,7 +266,15 @@ sub generate_submission {
           <STANDARD short_name="unaligned"/>
         </ASSEMBLY>
         <RUN_LABELS>
-          <RUN refcenter="$center_name" refname="$run" read_group_label="$read_group_label" data_block_name="$library"/>
+ANALYSISXML
+
+    foreach my $i (0..$#libraries) {
+        $analysis_xml .= <<RUN;
+	      <RUN refcenter="$center_name" refname="$runs[$i]" read_group_label="$read_group_labels[$i]" data_block_name="$libraries[$i]"/>
+RUN
+    } # close foreach loop
+    
+    $analysis_xml .= <<ANALYSISXML;
         </RUN_LABELS>
         <SEQ_LABELS>
           <SEQUENCE accession="NA" data_block_name="NA" seq_label="NA"/>
@@ -274,7 +290,7 @@ sub generate_submission {
               <STEP_INDEX>NA</STEP_INDEX>
               <PREV_STEP_INDEX>NA</PREV_STEP_INDEX>
               <PROGRAM>gnos_upload_fastq.pl</PROGRAM>
-              <VERSION>1.02</VERSION>
+              <VERSION>1.03</VERSION>
               <NOTES></NOTES>
             </PIPE_SECTION>
           </PIPELINE>
@@ -355,14 +371,15 @@ ANALYSISXML
 <EXPERIMENT_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.experiment.xsd?view=co">
 END
 
-    $exp_xml .= <<END;
-<EXPERIMENT center_name="$center_name" alias="$exp">
-  <STUDY_REF accession= "$accession" refcenter="OICR" refname="$study_name"/>
+    foreach my $i (0..$#expts) {
+        $exp_xml .= <<END;
+ <EXPERIMENT center_name="$center_name" alias="$expts[$i]">
+  <STUDY_REF accession="$accession" refcenter="OICR" refname="$study_name"/>
     <DESIGN>
       <DESIGN_DESCRIPTION>ICGC RNA-Seq Paired-End Experiment</DESIGN_DESCRIPTION>
       <SAMPLE_DESCRIPTOR refcenter="OICR" refname="$aliquot_id"/>
       <LIBRARY_DESCRIPTOR>
-        <LIBRARY_NAME>"$library"</LIBRARY_NAME>
+        <LIBRARY_NAME>"$libraries[$i]"</LIBRARY_NAME>
         <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
         <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
         <LIBRARY_SELECTION>$library_selection</LIBRARY_SELECTION>
@@ -414,6 +431,10 @@ END
       <DIRECTIVES></DIRECTIVES>
     </PROCESSING>
   </EXPERIMENT>
+END
+    } # close foreach loop
+    
+    $exp_xml .= <<END;
 </EXPERIMENT_SET>
 END
 
@@ -425,11 +446,13 @@ END
   <RUN_SET xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/sra/doc/SRA_1-5/SRA.run.xsd?view=co">
 END
 
-    $run_xml .= <<END;
-    <RUN center_name="$center_name" alias="$run">
-        <EXPERIMENT_REF refcenter="$center_name" refname="$exp"/>
+    foreach my $i (0..$#runs) {
+        $run_xml .= <<END;
+    <RUN center_name="$center_name" alias="$runs[$i]">
+        <EXPERIMENT_REF refcenter="$center_name" refname="$expts[$i]"/>
     </RUN>
 END
+    } # close foreach loop
     
     $run_xml .= <<END;
   </RUN_SET>
@@ -465,11 +488,11 @@ gnos_upload_fastq.pl - Generates metadata files and uploads metadata and fastq f
   
 =head1 VERSION
  
-This documentation refers to gnos_upload_fastq.pl version 1.0.2
+This documentation refers to gnos_upload_fastq.pl version 1.0.3
  
 =head1 USAGE
 
- gnos_upload_fastq.pl  --fastq <your_fastq.tar.gz>  --fastq-md5sum-file <your_fastq.tar.gz.md5 --outdir <your_outdir> --upload-url <https://gtrepo-ebi.annailabs.com> --key <full/path/to/your/gnos_key.pem> --metadata <your_metadata_file.txt>;
+ gnos_upload_fastq.pl  --fastq <your_fastq.tar.gz>  --fastq-md5sum-file <your_fastq.tar.gz.md5 --outdir <your_outdir> --upload-url <https://gtrepo-bsc.annailabs.com> --key <full/path/to/your/gnos_key.pem> --metadata <your_metadata_file.txt>;
   
 =head1 REQUIRED ARGUMENTS
 
@@ -483,7 +506,7 @@ This documentation refers to gnos_upload_fastq.pl version 1.0.2
 
 --key the full path to the file containing your GNOS upload token
 
---upload-url the full URL to the GNOS repository of your choice
+--upload-url the full URL to the GNOS at the Barcelona Supercomputing Centre
  
 =head1 OPTIONS
 
